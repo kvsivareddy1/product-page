@@ -58,8 +58,8 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
     }
 
     // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     // Insert new user
     const result = await pool.query(
@@ -72,7 +72,7 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: newUser.id },
-      process.env.JWT_SECRET || "your-secret-key",
+      process.env.JWT_SECRET as string,
       { expiresIn: "7d" }
     );
 

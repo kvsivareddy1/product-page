@@ -7,7 +7,7 @@
     "start": "node dist/server.js",
     "dev": "nodemon --exec ts-node src/server.ts",
     "build": "tsc",
-    "db:setup": "psql -U postgres -f src/database/schema.sql"
+    "db:setup": "psql \"$DATABASE_URL\" -f src/database/schema.sql"
   },
   "keywords": [],
   "author": "",

@@ -261,89 +261,102 @@ router.post(
   }
 );
 
+// Save product responses
 router.post(
   "/:id/responses",
   authenticateToken,
-  async (req: AuthRequest, res: Response): Promise<void> => {
+  async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
       const { responses } = req.body;
 
-      // Validation
-      if (!Array.isArray(responses)) {
-        res.status(400).json({
-          error: "Invalid input",
-          message: "Responses must be an array",
-        });
-        return;
-      }
+      console.log("Saving responses for product:", id);
+      console.log("Responses received:", responses);
 
       // Verify product ownership
-      const productCheck = await pool.query(
-        "SELECT id FROM products WHERE id = $1 AND user_id = $2",
+      const product = await pool.query(
+        "SELECT * FROM products WHERE id = $1 AND user_id = $2",
         [id, req.userId]
       );
 
-      if (productCheck.rows.length === 0) {
-        res.status(404).json({
-          error: "Product not found",
-          message:
-            "The requested product does not exist or you do not have access to it",
-        });
-        return;
+      if (product.rows.length === 0) {
+        return res.status(404).json({ error: "Product not found" });
       }
 
-      // Begin transaction
-      const client = await pool.connect();
+      // Delete existing responses
+      await pool.query("DELETE FROM product_responses WHERE product_id = $1", [
+        id,
+      ]);
 
-      try {
-        await client.query("BEGIN");
+      // Get all questions for mapping
+      const allQuestions = await pool.query("SELECT * FROM questions");
+      const questionMap = new Map(
+        allQuestions.rows.map((q) => [q.id.toString(), q.id])
+      );
 
-        // Delete existing responses for this product
-        await client.query(
-          "DELETE FROM product_responses WHERE product_id = $1",
-          [id]
-        );
+      // Also create a map by question text (lowercase)
+      const questionTextMap = new Map(
+        allQuestions.rows.map((q) => [q.question_text.toLowerCase(), q.id])
+      );
 
-        // Insert new responses
-        for (const response of responses) {
-          if (
-            !response.question_id ||
-            response.answer === undefined ||
-            response.answer === null
-          ) {
-            continue; // Skip invalid responses
-          }
+      // Insert new responses
+      const insertPromises = responses.map(async (response: any) => {
+        let questionId = response.question_id;
 
-          await client.query(
-            "INSERT INTO product_responses (product_id, question_id, answer) VALUES ($1, $2, $3)",
-            [id, response.question_id, String(response.answer)]
+        // If question_id is a string that's not numeric
+        if (typeof questionId === "string" && isNaN(parseInt(questionId))) {
+          // Try to find by text match
+          const matchingQuestion = allQuestions.rows.find((q) =>
+            q.question_text.toLowerCase().includes(questionId.toLowerCase())
           );
+
+          if (matchingQuestion) {
+            questionId = matchingQuestion.id;
+            console.log(
+              `Mapped "${response.question_id}" to question ID ${questionId}`
+            );
+          } else {
+            console.error(
+              `Could not find question for ID: ${response.question_id}`
+            );
+            return null; // Skip this response
+          }
         }
 
-        // Update product status to completed
-        await client.query(
-          "UPDATE products SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
-          ["completed", id]
+        // Ensure question_id is a number
+        const numericQuestionId = parseInt(questionId);
+
+        if (isNaN(numericQuestionId)) {
+          console.error(`Invalid question_id: ${response.question_id}`);
+          return null;
+        }
+
+        return pool.query(
+          "INSERT INTO product_responses (product_id, question_id, answer) VALUES ($1, $2, $3)",
+          [id, numericQuestionId, response.answer]
         );
+      });
 
-        await client.query("COMMIT");
+      // Filter out null promises and execute
+      const validPromises = insertPromises.filter((p: any) => p !== null);
+      await Promise.all(validPromises);
 
-        res.json({
-          message: "Responses saved successfully",
-          count: responses.length,
-        });
-      } catch (error) {
-        await client.query("ROLLBACK");
-        throw error;
-      } finally {
-        client.release();
-      }
+      // Update product status
+      await pool.query(
+        "UPDATE products SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+        ["completed", id]
+      );
+
+      res.json({
+        message: "Responses saved successfully",
+        count: validPromises.length,
+      });
     } catch (error: any) {
-      console.error("Error saving responses:", error);
+      console.error("Save responses error:", error);
       res.status(500).json({
         error: "Server error",
         message: "Failed to save responses",
+        details: error.message,
       });
     }
   }

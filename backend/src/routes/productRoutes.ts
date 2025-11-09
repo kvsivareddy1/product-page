@@ -85,7 +85,6 @@ router.put(
       const { id } = req.params;
       const { product_name, category, status } = req.body;
 
-      // Check if product exists and belongs to user
       const checkResult = await pool.query(
         "SELECT id FROM products WHERE id = $1 AND user_id = $2",
         [id, req.userId]
@@ -100,7 +99,6 @@ router.put(
         return;
       }
 
-      // Validate status if provided
       if (status && !["draft", "completed", "archived"].includes(status)) {
         res.status(400).json({
           error: "Invalid status",
@@ -221,12 +219,10 @@ router.post(
         return;
       }
 
-      // Get all conditional questions
       const conditionalResult = await pool.query(
         "SELECT * FROM questions WHERE is_conditional = true"
       );
 
-      // Filter conditional questions based on answers
       const nextQuestions = conditionalResult.rows.filter((question) => {
         if (!question.parent_question_id || !question.trigger_answer) {
           return false;
@@ -240,7 +236,6 @@ router.post(
           return false;
         }
 
-        // Case-insensitive comparison of answer with trigger
         return (
           parentAnswer.answer.toLowerCase().trim() ===
           question.trigger_answer.toLowerCase().trim()
@@ -261,7 +256,6 @@ router.post(
   }
 );
 
-// Save product responses
 router.post(
   "/:id/responses",
   authenticateToken,
@@ -273,7 +267,6 @@ router.post(
       console.log("Saving responses for product:", id);
       console.log("Responses received:", responses);
 
-      // Verify product ownership
       const product = await pool.query(
         "SELECT * FROM products WHERE id = $1 AND user_id = $2",
         [id, req.userId]
@@ -283,29 +276,23 @@ router.post(
         return res.status(404).json({ error: "Product not found" });
       }
 
-      // Delete existing responses
       await pool.query("DELETE FROM product_responses WHERE product_id = $1", [
         id,
       ]);
 
-      // Get all questions for mapping
       const allQuestions = await pool.query("SELECT * FROM questions");
       const questionMap = new Map(
         allQuestions.rows.map((q) => [q.id.toString(), q.id])
       );
 
-      // Also create a map by question text (lowercase)
       const questionTextMap = new Map(
         allQuestions.rows.map((q) => [q.question_text.toLowerCase(), q.id])
       );
 
-      // Insert new responses
       const insertPromises = responses.map(async (response: any) => {
         let questionId = response.question_id;
 
-        // If question_id is a string that's not numeric
         if (typeof questionId === "string" && isNaN(parseInt(questionId))) {
-          // Try to find by text match
           const matchingQuestion = allQuestions.rows.find((q) =>
             q.question_text.toLowerCase().includes(questionId.toLowerCase())
           );
@@ -319,11 +306,10 @@ router.post(
             console.error(
               `Could not find question for ID: ${response.question_id}`
             );
-            return null; // Skip this response
+            return null;
           }
         }
 
-        // Ensure question_id is a number
         const numericQuestionId = parseInt(questionId);
 
         if (isNaN(numericQuestionId)) {
@@ -337,11 +323,9 @@ router.post(
         );
       });
 
-      // Filter out null promises and execute
       const validPromises = insertPromises.filter((p: any) => p !== null);
       await Promise.all(validPromises);
 
-      // Update product status
       await pool.query(
         "UPDATE products SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
         ["completed", id]
@@ -369,7 +353,6 @@ router.get(
     try {
       const { id } = req.params;
 
-      // Verify product ownership
       const productCheck = await pool.query(
         "SELECT id FROM products WHERE id = $1 AND user_id = $2",
         [id, req.userId]
@@ -384,7 +367,6 @@ router.get(
         return;
       }
 
-      // Get responses with question details
       const result = await pool.query(
         `SELECT pr.*, q.question_text, q.question_type, q.category, q.order_number
        FROM product_responses pr 
@@ -393,7 +375,6 @@ router.get(
        ORDER BY q.order_number ASC`,
         [id]
       );
-
       res.json(result.rows);
     } catch (error: any) {
       console.error("Error fetching responses:", error);

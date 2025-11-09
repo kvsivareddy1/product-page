@@ -5,12 +5,10 @@ const router = express.Router();
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
 
-// Generate AI-powered questions
 router.post("/generate-questions", async (req: Request, res: Response) => {
   try {
     const { product_name, category, previous_answers } = req.body;
 
-    // Call AI service
     const response = await axios.post(`${AI_SERVICE_URL}/generate-questions`, {
       product_name,
       category,
@@ -20,7 +18,6 @@ router.post("/generate-questions", async (req: Request, res: Response) => {
     res.json(response.data);
   } catch (error: any) {
     console.error("AI service error:", error.message);
-    // Fallback to basic questions if AI service fails
     res.json({
       questions: getBasicQuestions(req.body.category),
       ai_generated: false,
@@ -29,12 +26,10 @@ router.post("/generate-questions", async (req: Request, res: Response) => {
   }
 });
 
-// Calculate transparency score with AI
 router.post("/calculate-score", async (req: Request, res: Response) => {
   try {
     const { product_name, category, responses } = req.body;
 
-    // Call AI service
     const response = await axios.post(`${AI_SERVICE_URL}/transparency-score`, {
       product_name,
       category,
@@ -44,7 +39,6 @@ router.post("/calculate-score", async (req: Request, res: Response) => {
     res.json(response.data);
   } catch (error: any) {
     console.error("AI service error:", error.message);
-    // Fallback to basic scoring
     const score = calculateBasicScore(req.body.responses);
     res.json({
       transparency_score: score,
@@ -57,7 +51,6 @@ router.post("/calculate-score", async (req: Request, res: Response) => {
   }
 });
 
-// Test AI service connection
 router.get("/health", async (req: Request, res: Response) => {
   try {
     const response = await axios.get(`${AI_SERVICE_URL}/`);
@@ -75,7 +68,6 @@ router.get("/health", async (req: Request, res: Response) => {
   }
 });
 
-// Fallback basic questions
 function getBasicQuestions(category: string) {
   const baseQuestions = [
     {
@@ -148,7 +140,6 @@ function getBasicQuestions(category: string) {
   return [...baseQuestions, ...(categoryQuestions[category] || [])];
 }
 
-// Fallback basic scoring
 function calculateBasicScore(responses: any[]) {
   if (!responses || responses.length === 0) return 0;
 

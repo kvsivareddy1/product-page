@@ -82,7 +82,7 @@ const Dashboard: React.FC = () => {
 
       {products.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📦</div>
+          {/* <div className="empty-icon">📦</div> */}
           <h2>No products yet</h2>
           <p>Start building transparency by adding your first product</p>
           <Link to="/products/new" className="btn-primary">

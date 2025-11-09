@@ -82,7 +82,7 @@ const ProductForm: React.FC = () => {
       setQuestions(aiQuestions);
 
       if (response.data.ai_generated) {
-        console.log("✨ Using AI-generated questions");
+        console.log("Using AI-generated questions");
       }
     } catch (error) {
       console.error("Error fetching AI questions:", error);
@@ -173,39 +173,6 @@ const ProductForm: React.FC = () => {
     }
   };
 
-  // const handleSubmit = async () => {
-  //   setLoading(true);
-
-  //   try {
-  //     // Create product
-  //     const productResponse = await axios.post(`${API_URL}/products`, {
-  //       product_name: productName,
-  //       category,
-  //     });
-
-  //     const productId = productResponse.data.id;
-
-  //     // Save responses
-  //     await axios.post(`${API_URL}/products/${productId}/responses`, {
-  //       responses,
-  //     });
-
-  //     // Generate report with AI scoring if available
-  //     if (aiEnabled) {
-  //       await generateAIReport(productId);
-  //     } else {
-  //       await axios.post(`${API_URL}/reports/${productId}/generate`);
-  //     }
-
-  //     navigate(`/reports/${productId}`);
-  //   } catch (error) {
-  //     console.error("Error submitting product:", error);
-  //     alert("Failed to submit product. Please try again.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const generateAIReport = async (productId: number) => {
     try {
       // Get AI score
@@ -246,7 +213,7 @@ const ProductForm: React.FC = () => {
           <span>1</span> Basic Info
         </div>
         <div className={`progress-step ${step >= 2 ? "active" : ""}`}>
-          <span>2</span> {aiEnabled ? "🤖 AI Questions" : "Details"}
+          <span>2</span> {aiEnabled ? "AI Questions" : "Details"}
         </div>
         <div className={`progress-step ${step >= 3 ? "active" : ""}`}>
           <span>3</span> Review
@@ -259,7 +226,7 @@ const ProductForm: React.FC = () => {
             <h2>Product Information</h2>
 
             {aiEnabled && (
-              <div className="ai-badge">✨ AI-Powered Questions Enabled</div>
+              <div className="ai-badge"> AI-Powered Questions Enabled</div>
             )}
 
             <div className="form-group">
@@ -300,9 +267,7 @@ const ProductForm: React.FC = () => {
 
         {step === 2 && (
           <div className="form-step">
-            <h2>
-              {aiEnabled ? "🤖 AI-Generated Questions" : "Product Details"}
-            </h2>
+            <h2>{aiEnabled ? "AI-Generated Questions" : "Product Details"}</h2>
 
             {questions.map((question) => (
               <div key={question.id} className="form-group">
@@ -372,7 +337,7 @@ const ProductForm: React.FC = () => {
               <p>{responses.length} questions answered</p>
               {aiEnabled && (
                 <p className="ai-note">
-                  ✨ AI will analyze your responses for transparency scoring
+                  AI will analyze your responses for transparency scoring
                 </p>
               )}
             </div>
@@ -389,7 +354,7 @@ const ProductForm: React.FC = () => {
                 {loading
                   ? "Generating Report..."
                   : aiEnabled
-                  ? "🤖 Submit & Generate AI Report"
+                  ? "Submit & Generate AI Report"
                   : "Submit & Generate Report"}
               </button>
             </div>

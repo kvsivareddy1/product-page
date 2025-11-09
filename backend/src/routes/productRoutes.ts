@@ -57,48 +57,25 @@ router.get(
   }
 );
 
-router.post(
-  "/",
-  authenticateToken,
-  async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-      const { product_name, category } = req.body;
+router.post("/", authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { product_name, category } = req.body;
 
-      // Validation
-      if (!product_name) {
-        res.status(400).json({
-          error: "Product name is required",
-          message: "Please provide a product name",
-        });
-        return;
-      }
-
-      if (product_name.length > 255) {
-        res.status(400).json({
-          error: "Product name too long",
-          message: "Product name must be less than 255 characters",
-        });
-        return;
-      }
-
-      const result = await pool.query(
-        "INSERT INTO products (user_id, product_name, category, status) VALUES ($1, $2, $3, $4) RETURNING *",
-        [req.userId, product_name, category || null, "draft"]
-      );
-
-      res.status(201).json({
-        message: "Product created successfully",
-        product: result.rows[0],
-      });
-    } catch (error: any) {
-      console.error("Error creating product:", error);
-      res.status(500).json({
-        error: "Server error",
-        message: "Failed to create product",
-      });
+    if (!product_name) {
+      return res.status(400).json({ error: "Product name is required" });
     }
+
+    const result = await pool.query(
+      "INSERT INTO products (user_id, product_name, category, status) VALUES ($1, $2, $3, $4) RETURNING *",
+      [req.userId, product_name, category, "draft"]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Product creation error:", error);
+    res.status(500).json({ error: "Server error" });
   }
-);
+});
 
 router.put(
   "/:id",

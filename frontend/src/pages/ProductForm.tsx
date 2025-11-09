@@ -122,18 +122,31 @@ const ProductForm: React.FC = () => {
     setLoading(true);
 
     try {
+      console.log("Step 1: Creating product...", { productName, category });
+
       // Create product
       const productResponse = await axios.post(`${API_URL}/products`, {
         product_name: productName,
         category,
       });
 
-      const productId = productResponse.data.id;
+      console.log("Step 2: Product created:", productResponse.data);
 
-      // Save responses
-      await axios.post(`${API_URL}/products/${productId}/responses`, {
-        responses,
-      });
+      // Check if product ID exists
+      if (!productResponse.data || !productResponse.data.id) {
+        throw new Error("Product ID not received from server");
+      }
+
+      const productId = productResponse.data.id;
+      // Save responses (only if there are responses)
+      if (responses.length > 0) {
+        await axios.post(`${API_URL}/products/${productId}/responses`, {
+          responses,
+        });
+      }
+
+      // Generate report
+      await axios.post(`${API_URL}/reports/${productId}/generate`);
 
       // Generate report with AI scoring if available
       if (aiEnabled) {
@@ -141,15 +154,57 @@ const ProductForm: React.FC = () => {
       } else {
         await axios.post(`${API_URL}/reports/${productId}/generate`);
       }
-
       navigate(`/reports/${productId}`);
-    } catch (error) {
-      console.error("Error submitting product:", error);
-      alert("Failed to submit product. Please try again.");
+    } catch (error: any) {
+      console.error("Submission error:", error);
+      console.error("Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to submit product";
+      alert(`Error: ${errorMessage}\n\nCheck console for details.`);
     } finally {
       setLoading(false);
     }
   };
+
+  // const handleSubmit = async () => {
+  //   setLoading(true);
+
+  //   try {
+  //     // Create product
+  //     const productResponse = await axios.post(`${API_URL}/products`, {
+  //       product_name: productName,
+  //       category,
+  //     });
+
+  //     const productId = productResponse.data.id;
+
+  //     // Save responses
+  //     await axios.post(`${API_URL}/products/${productId}/responses`, {
+  //       responses,
+  //     });
+
+  //     // Generate report with AI scoring if available
+  //     if (aiEnabled) {
+  //       await generateAIReport(productId);
+  //     } else {
+  //       await axios.post(`${API_URL}/reports/${productId}/generate`);
+  //     }
+
+  //     navigate(`/reports/${productId}`);
+  //   } catch (error) {
+  //     console.error("Error submitting product:", error);
+  //     alert("Failed to submit product. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const generateAIReport = async (productId: number) => {
     try {

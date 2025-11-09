@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./ProductForm.css";
 
@@ -23,7 +23,6 @@ interface Response {
 }
 
 const ProductForm: React.FC = () => {
-  const { id } = useParams();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
@@ -192,7 +191,7 @@ const ProductForm: React.FC = () => {
           <span>1</span> Basic Info
         </div>
         <div className={`progress-step ${step >= 2 ? "active" : ""}`}>
-          <span>2</span> {aiEnabled ? "AI Questions" : "Details"}
+          <span>2</span> {aiEnabled ? "🤖 AI Questions" : "Details"}
         </div>
         <div className={`progress-step ${step >= 3 ? "active" : ""}`}>
           <span>3</span> Review
@@ -205,7 +204,7 @@ const ProductForm: React.FC = () => {
             <h2>Product Information</h2>
 
             {aiEnabled && (
-              <div className="ai-badge">AI-Powered Questions Enabled</div>
+              <div className="ai-badge">✨ AI-Powered Questions Enabled</div>
             )}
 
             <div className="form-group">
@@ -246,7 +245,9 @@ const ProductForm: React.FC = () => {
 
         {step === 2 && (
           <div className="form-step">
-            <h2>{aiEnabled ? "AI-Generated Questions" : "Product Details"}</h2>
+            <h2>
+              {aiEnabled ? "🤖 AI-Generated Questions" : "Product Details"}
+            </h2>
 
             {questions.map((question) => (
               <div key={question.id} className="form-group">
@@ -316,7 +317,7 @@ const ProductForm: React.FC = () => {
               <p>{responses.length} questions answered</p>
               {aiEnabled && (
                 <p className="ai-note">
-                  AI will analyze your responses for transparency scoring
+                  ✨ AI will analyze your responses for transparency scoring
                 </p>
               )}
             </div>
@@ -333,7 +334,7 @@ const ProductForm: React.FC = () => {
                 {loading
                   ? "Generating Report..."
                   : aiEnabled
-                  ? "Submit & Generate AI Report"
+                  ? "🤖 Submit & Generate AI Report"
                   : "Submit & Generate Report"}
               </button>
             </div>
